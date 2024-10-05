@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int       @id @default(autoincrement())
+  email          String    @unique
+  username       String    @unique
+  fullName       String    @default("user_default")
+  password       String
+  bio            String?   @db.Text // Tipe panjang dan bisa null
+  avatar         String    @default("default-avatar-url") // URL avatar default
+  posts          Post[]
+  likes          Like[]
+  comments       Comment[]
+  followingUsers Follow[]  @relation("Following")
+  followersUsers Follow[]  @relation("Followers")
+  createdAt      DateTime  @default(now())
+}
+
+model Post {
+  id        Int       @id @default(autoincrement())
+  text      String    @db.Text  // Menggunakan tipe text untuk menghindari batasan panjang
+  image     String?   // URL gambar opsional
+  author    User      @relation(fields: [authorId], references: [id])
+  authorId  Int
+  likes     Like[]
+  comments  Comment[]
+  createdAt DateTime  @default(now())
+}
+
+model Follow {
+  followerId  Int
+  followingId Int
+  follower    User   @relation("Followers", fields: [followerId], references: [id])
+  following   User   @relation("Following", fields: [followingId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId]) // Mendefinisikan kunci komposit
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId]) // Ensures the combination of userId and postId is unique
+}
+
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  text      String   @db.Text // Menggunakan tipe text agar panjang tidak terbatas
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    Int
+  createdAt DateTime @default(now())
+}
